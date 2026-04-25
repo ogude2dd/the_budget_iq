@@ -10,6 +10,7 @@ class AmountField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Existing label, kept as-is
         const Text(
           'Amount (GH₵)',
           style: TextStyle(
@@ -19,6 +20,8 @@ class AmountField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
+
+        // Existing amount input field, kept as-is
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF9FAFB),
@@ -58,6 +61,62 @@ class AmountField extends StatelessWidget {
             ),
           ),
         ),
+
+        // Adds spacing between the input field and the new chips
+        const SizedBox(height: 16),
+
+        // NEW: Section label that tells users what the chips below are for
+        const Text(
+          'Quick Amounts',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // NEW: Wrap widget displays preset amount chips in a row
+        // that automatically wraps to the next line on smaller screens
+        Wrap(
+          spacing: 8,    // horizontal gap between chips
+          runSpacing: 8, // vertical gap when chips wrap to a new line
+          children: [10, 50, 100, 200, 500].map((preset) {
+            return GestureDetector(
+              // NEW: When tapped, fill the amount field with the preset value
+              onTap: () {
+                controller.text = preset.toString();
+
+                // NEW: Move the cursor to the end of the text
+                // so the user can keep typing to adjust the amount
+                controller.selection = TextSelection.fromPosition(
+                  TextPosition(offset: controller.text.length),
+                );
+              },
+
+              // NEW: The chip itself, styled to match the Set Budget screen
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'GH₵$preset',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        //
       ],
     );
   }
