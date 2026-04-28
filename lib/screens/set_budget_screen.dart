@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import '../main.dart';
+import 'package:the_budget_iq/main.dart';
 
 class SetBudgetScreen extends StatefulWidget {
   const SetBudgetScreen({super.key});
