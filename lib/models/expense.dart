@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum ExpenseCategory { food, transport, entertainment, shopping, bills }
+enum ExpenseCategory { food, transport, entertainment, shopping, bills, other }
 
 extension ExpenseCategoryExtension on ExpenseCategory {
   String get name {
@@ -15,6 +15,8 @@ extension ExpenseCategoryExtension on ExpenseCategory {
         return 'Shopping';
       case ExpenseCategory.bills:
         return 'Bills';
+      case ExpenseCategory.other:
+        return 'Other';
     }
   }
 
@@ -30,6 +32,8 @@ extension ExpenseCategoryExtension on ExpenseCategory {
         return const Color(0xFF10B981);
       case ExpenseCategory.bills:
         return const Color(0xFF8B5CF6);
+      case ExpenseCategory.other:
+        return const Color(0xFF6B7280);
     }
   }
 
@@ -45,6 +49,8 @@ extension ExpenseCategoryExtension on ExpenseCategory {
         return '🛍️';
       case ExpenseCategory.bills:
         return '💡';
+      case ExpenseCategory.other:
+        return '📦';
     }
   }
 }
