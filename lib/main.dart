@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:the_budget_iq/screens/login_screen.dart';
 
 import 'models/expense.dart';
 import 'widgets/main_scaffold.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(
@@ -54,7 +56,7 @@ class TheBudgetIQApp extends StatelessWidget {
         fontFamily: 'SF Pro Display',
         useMaterial3: true,
       ),
-      home: const MainScaffold(),
+      home: const LoginScreen(),
     );
   }
 }
