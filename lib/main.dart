@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import 'models/expense.dart';
 import 'widgets/main_scaffold.dart';
 
 void main() {
-  runApp(const TheBudgetIQApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (context) => ExpenseStore(),
+      child: const TheBudgetIQApp(),
+    ),
+  );
 }
 
-// simple in-memory store (no database)
 class ExpenseStore extends ChangeNotifier {
-  ExpenseStore._();
-  static final ExpenseStore instance = ExpenseStore._();
-
   final List<Expense> _expenses = [
     Expense(
       id: '1',
@@ -25,7 +27,6 @@ class ExpenseStore extends ChangeNotifier {
   double _monthlyBudget = 2500;
 
   List<Expense> get expenses => List.unmodifiable(_expenses.reversed);
-
   double get monthlyBudget => _monthlyBudget;
 
   void addExpense(Expense e) {
@@ -53,10 +54,7 @@ class TheBudgetIQApp extends StatelessWidget {
         fontFamily: 'SF Pro Display',
         useMaterial3: true,
       ),
-      home: AnimatedBuilder(
-        animation: ExpenseStore.instance,
-        builder: (context, _) => const MainScaffold(),
-      ),
+      home: const MainScaffold(),
     );
   }
 }

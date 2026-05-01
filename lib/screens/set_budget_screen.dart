@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:the_budget_iq/main.dart';
 
 class SetBudgetScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
   void initState() {
     super.initState();
     _controller = TextEditingController(
-      text: ExpenseStore.instance.monthlyBudget.toStringAsFixed(0),
+      text: context.read<ExpenseStore>().monthlyBudget.toStringAsFixed(0),
     );
   }
 
@@ -28,7 +29,7 @@ class _SetBudgetScreenState extends State<SetBudgetScreen> {
       return;
     }
 
-    ExpenseStore.instance.setMonthlyBudget(amount);
+    context.read<ExpenseStore>().setMonthlyBudget(amount);
     Navigator.pop(context);
   }
 

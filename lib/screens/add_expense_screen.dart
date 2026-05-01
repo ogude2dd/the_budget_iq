@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import 'package:the_budget_iq/main.dart';
-import 'package:the_budget_iq/models/expense.dart';
-import 'package:the_budget_iq/widgets/add_expense/action_buttons.dart';
-import 'package:the_budget_iq/widgets/add_expense/amount_field.dart';
-import 'package:the_budget_iq/widgets/add_expense/category_selector.dart';
-import 'package:the_budget_iq/widgets/add_expense/description_field.dart';
+import '../main.dart';
+import '../models/expense.dart';
+import '../widgets/add_expense/action_buttons.dart';
+import '../widgets/add_expense/amount_field.dart';
+import '../widgets/add_expense/category_selector.dart';
+import '../widgets/add_expense/description_field.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -28,7 +29,8 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       return;
     }
 
-    ExpenseStore.instance.addExpense(
+    // ← CHANGED: use Provider instead of singleton
+    context.read<ExpenseStore>().addExpense(
       Expense(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         amount: amount,

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:the_budget_iq/main.dart';
-import 'package:the_budget_iq/models/expense.dart';
-import 'package:the_budget_iq/widgets/reports/category_legend.dart';
-import 'package:the_budget_iq/widgets/reports/expense_pie_chart.dart';
+import 'package:provider/provider.dart';
+
+import '../main.dart';
+import '../models/expense.dart';
+import '../widgets/reports/category_legend.dart';
+import '../widgets/reports/expense_pie_chart.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final expenses = ExpenseStore.instance.expenses;
+    final expenses = context.watch<ExpenseStore>().expenses;   // ← CHANGED
 
     final Map<ExpenseCategory, double> categoryTotals = {
       for (var c in ExpenseCategory.values) c: 0
@@ -43,7 +45,6 @@ class ReportsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
