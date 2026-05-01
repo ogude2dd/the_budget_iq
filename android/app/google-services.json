@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "694788623078",
+    "project_id": "the-budget-iq",
+    "storage_bucket": "the-budget-iq.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:694788623078:android:d9919988e38707e4e38927",
+        "android_client_info": {
+          "package_name": "com.example.the_budget_iq"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCAOXL38QLZIQ0iJZDPqqtZVxLH6GGFCqs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
