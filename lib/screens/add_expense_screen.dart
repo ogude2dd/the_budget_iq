@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../main.dart';
-import '../models/expense.dart';
-import '../widgets/add_expense/action_buttons.dart';
-import '../widgets/add_expense/amount_field.dart';
-import '../widgets/add_expense/category_selector.dart';
-import '../widgets/add_expense/description_field.dart';
+import 'package:the_budget_iq/main.dart';
+import 'package:the_budget_iq/models/expense.dart';
+import 'package:the_budget_iq/widgets/add_expense/action_buttons.dart';
+import 'package:the_budget_iq/widgets/add_expense/amount_field.dart';
+import 'package:the_budget_iq/widgets/add_expense/category_selector.dart';
+import 'package:the_budget_iq/widgets/add_expense/description_field.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   const AddExpenseScreen({super.key});
@@ -29,7 +29,6 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       return;
     }
 
-    // ← CHANGED: use Provider instead of singleton
     context.read<ExpenseStore>().addExpense(
       Expense(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -47,6 +46,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      resizeToAvoidBottomInset: true,            // ← ADDED
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -63,35 +63,38 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      AmountField(controller: amountController),
-                      const SizedBox(height: 24),
-                      DescriptionField(controller: descriptionController),
-                      const SizedBox(height: 24),
-                      CategorySelector(
-                        selected: selectedCategory,
-                        onSelected: (c) =>
-                            setState(() => selectedCategory = c),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
-                  ),
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(      // ← KEEP scroll view
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AmountField(controller: amountController),
+                    const SizedBox(height: 24),
+                    DescriptionField(controller: descriptionController),
+                    const SizedBox(height: 24),
+                    CategorySelector(
+                      selected: selectedCategory,
+                      onSelected: (c) =>
+                          setState(() => selectedCategory = c),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
-              ActionButtons(
+            ),
+
+            // BUTTONS STAY AT BOTTOM
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ActionButtons(
                 onCancel: () => Navigator.pop(context),
                 onSave: _saveExpense,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
