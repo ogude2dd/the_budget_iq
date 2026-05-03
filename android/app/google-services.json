@@ -12,7 +12,20 @@
           "package_name": "com.example.the_budget_iq"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "694788623078-pnq69qna5n0mb2c4dobi3ockfhvnkc45.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.the_budget_iq",
+            "certificate_hash": "2859701776c6fcad6dbccdf8abf3633defe4c3b8"
+          }
+        },
+        {
+          "client_id": "694788623078-7130nt8nka3uravv3ob2co1jgpm2so47.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCAOXL38QLZIQ0iJZDPqqtZVxLH6GGFCqs"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "694788623078-7130nt8nka3uravv3ob2co1jgpm2so47.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "694788623078-stvvj9m50aa7t64qs44l3bg0k2o1tvn8.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.theBudgetIq"
+              }
+            }
+          ]
         }
       }
     }
