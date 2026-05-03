@@ -22,17 +22,9 @@ void main() async {
 }
 
 class ExpenseStore extends ChangeNotifier {
-  final List<Expense> _expenses = [
-    Expense(
-      id: '1',
-      amount: 20,
-      description: 'Uber Ride',
-      category: ExpenseCategory.transport,
-      date: DateTime.now(),
-    ),
-  ];
+  final List<Expense> _expenses = [];
 
-  double _monthlyBudget = 2500;
+  double _monthlyBudget = 0;
 
   List<Expense> get expenses => List.unmodifiable(_expenses.reversed);
   double get monthlyBudget => _monthlyBudget;
