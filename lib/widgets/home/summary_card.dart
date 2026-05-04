@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:the_budget_iq/utils/format.dart';
 
 class SummaryCard extends StatelessWidget {
   final String label;
@@ -39,7 +40,7 @@ class SummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'GH₵${amount.toStringAsFixed(0)}',
+            'GH₵${formatCurrency(amount)}',
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,

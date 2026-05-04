@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:the_budget_iq/screens/set_budget_screen.dart';
+import 'package:the_budget_iq/utils/format.dart';
 
 class BudgetCard extends StatelessWidget {
   final double spent;
@@ -83,7 +84,7 @@ class BudgetCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'GH₵${spent.toStringAsFixed(0)}',
+                    'GH₵${formatCurrency(spent)}',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 36,
@@ -94,7 +95,7 @@ class BudgetCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    'of GH₵${total.toStringAsFixed(0)}',
+                    'of GH₵${formatCurrency(total)}',
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.85),
                       fontSize: 15,
@@ -122,7 +123,7 @@ class BudgetCard extends StatelessWidget {
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
                 Text(
-                  'GH₵${remaining.toStringAsFixed(0)} Left',
+                  'GH₵${formatCurrency(total - spent)} Left',
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ],

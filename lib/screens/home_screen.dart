@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../main.dart';
-import '../widgets/home/budget_card.dart';
-import '../widgets/home/home_header.dart';
-import '../widgets/home/summary_card.dart';
-import '../widgets/home/transaction_tile.dart';
-
+import 'package:the_budget_iq/main.dart';
+import 'package:the_budget_iq/screens/transaction_history_screen.dart';
+import 'package:the_budget_iq/widgets/home/budget_card.dart';
+import 'package:the_budget_iq/widgets/home/home_header.dart';
+import 'package:the_budget_iq/widgets/home/summary_card.dart';
+import 'package:the_budget_iq/widgets/home/transaction_tile.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final store = context.watch<ExpenseStore>();      // ← CHANGED
+    final store = context.watch<ExpenseStore>();
     final expenses = store.expenses;
     final today = DateTime.now();
 
@@ -38,7 +38,7 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: 24),
             BudgetCard(
               spent: monthTotal,
-              total: store.monthlyBudget,            // ← CHANGED
+              total: store.monthlyBudget,
             ),
             const SizedBox(height: 16),
             Row(
@@ -53,10 +53,13 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 24),
+
+            // 🔄 CHANGED — removed `const` from Row because GestureDetector
+            // uses runtime context for navigation
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text(
+              children: [
+                const Text(
                   'Recent Transactions',
                   style: TextStyle(
                     fontSize: 18,
@@ -64,11 +67,24 @@ class HomeScreen extends StatelessWidget {
                     color: Color(0xFF111827),
                   ),
                 ),
-                Text(
-                  'See All',
-                  style: TextStyle(
-                    color: Color(0xFF6366F1),
-                    fontWeight: FontWeight.w600,
+
+                // 🆕 NEW — Wrapped 'See All' in a GestureDetector so it's tappable.
+                // Opens the full stats screen with bar chart and all transactions.
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const TransactionHistoryScreen(),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    'See All',
+                    style: TextStyle(
+                      color: Color(0xFF6366F1),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
