@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+// CHANGED: Added Firebase Auth import to enable real account creation
+import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/main_scaffold.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -13,26 +15,63 @@ class _SignupScreenState extends State<SignupScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  void signupUser() {
+  // CHANGED: Method is now `Future<void>` and `async` because it has to wait
+  // for Firebase to respond before deciding what to do next.
+  Future<void> signupUser() async {
     final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
 
+    // Existing empty-field check, kept as-is
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please complete all fields'),
-        ),
+        const SnackBar(content: Text('Please complete all fields')),
       );
       return;
     }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const MainScaffold(),
-      ),
-    );
+    // CHANGED: New password length check.
+    // Firebase rejects passwords shorter than 6 characters anyway,
+    // but checking here gives the user faster feedback without
+    // a network round-trip.
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters')),
+      );
+      return;
+    }
+
+    // CHANGED: Wrapped account creation in try/catch.
+    // This is where the real Firebase account gets created.
+    try {
+      // CHANGED: Actually creates a user in Firebase Authentication.
+      // Returns a UserCredential containing the new user's info.
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: email, password: password);
+
+      // CHANGED: Saves the user's name on their Firebase profile so the
+      // app can greet them later (e.g. "Hello, David").
+      await credential.user?.updateDisplayName(name);
+
+      // CHANGED: `mounted` check before using `context` after `await`.
+      // If the user navigated away mid-signup, we shouldn't touch context.
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const MainScaffold()),
+      );
+    } on FirebaseAuthException catch (e) {
+      // CHANGED: Translate Firebase error codes into user-friendly messages.
+      String message = 'Signup failed';
+      if (e.code == 'email-already-in-use') message = 'Email already registered';
+      if (e.code == 'weak-password') message = 'Password is too weak';
+      if (e.code == 'invalid-email') message = 'Invalid email format';
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
   }
 
   @override
