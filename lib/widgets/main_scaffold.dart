@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-
-import '../screens/add_expense_screen.dart';
-import '../screens/home_screen.dart';
-import '../screens/reports_screen.dart';
+// CHANGED: Added Provider so we can access the ExpenseStore from context.
+import 'package:provider/provider.dart';
+// CHANGED: Import main.dart to access the ExpenseStore class defined there.
+import 'package:the_budget_iq/main.dart';
+import 'package:the_budget_iq/screens/add_expense_screen.dart';
+import 'package:the_budget_iq/screens/home_screen.dart';
+import 'package:the_budget_iq/screens/reports_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -18,6 +21,25 @@ class _MainScaffoldState extends State<MainScaffold> {
     HomeScreen(),
     ReportsScreen(),
   ];
+
+  // CHANGED: New initState method.
+  // This runs once, the first time MainScaffold is shown.
+  // We use it to load the signed-in user's data from Firestore so
+  // that expenses and budget appear immediately after login or app reopen.
+  @override
+  void initState() {
+    super.initState();
+    // CHANGED: addPostFrameCallback runs the code AFTER the first frame
+    // has been built. We need this because using `context.read` directly
+    // inside initState (before any frame) can cause errors — Provider
+    // isn't fully attached to this widget yet.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // CHANGED: Tells the ExpenseStore to fetch this user's expenses
+      // and monthly budget from Firestore. The store will notify listeners
+      // once the data arrives, which automatically updates the UI.
+      context.read<ExpenseStore>().loadUserData();
+    });
+  }
 
   void _openAddExpense() {
     Navigator.push(
