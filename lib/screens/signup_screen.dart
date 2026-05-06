@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-// CHANGED: Added Firebase Auth import to enable real account creation
 import 'package:firebase_auth/firebase_auth.dart';
-import '../widgets/main_scaffold.dart';
+import 'package:the_budget_iq/widgets/main_scaffold.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -14,26 +13,24 @@ class _SignupScreenState extends State<SignupScreen> {
   final nameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
 
-  // CHANGED: Method is now `Future<void>` and `async` because it has to wait
-  // for Firebase to respond before deciding what to do next.
   Future<void> signupUser() async {
     final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
+    final confirmPassword = confirmPasswordController.text.trim();
 
-    // Existing empty-field check, kept as-is
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please complete all fields')),
       );
       return;
     }
 
-    // CHANGED: New password length check.
-    // Firebase rejects passwords shorter than 6 characters anyway,
-    // but checking here gives the user faster feedback without
-    // a network round-trip.
     if (password.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password must be at least 6 characters')),
@@ -41,27 +38,41 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    // CHANGED: Wrapped account creation in try/catch.
-    // This is where the real Firebase account gets created.
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+
     try {
-      // CHANGED: Actually creates a user in Firebase Authentication.
-      // Returns a UserCredential containing the new user's info.
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      // CHANGED: Saves the user's name on their Firebase profile so the
-      // app can greet them later (e.g. "Hello, David").
       await credential.user?.updateDisplayName(name);
 
-      // CHANGED: `mounted` check before using `context` after `await`.
-      // If the user navigated away mid-signup, we shouldn't touch context.
       if (!mounted) return;
+      // CHANGED: Navigate to home first, THEN show the success snackbar.
+      // Doing it in this order means the snackbar appears on the home
+      // screen — which is where the user's eyes are — instead of
+      // flashing on the signup screen as it disappears.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainScaffold()),
       );
+
+      // CHANGED: Friendly welcome message confirms the account was created.
+      // Uses scaffoldMessengerKey/rootScaffoldMessenger so it shows on the
+      // new screen, not the screen we just left.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Welcome, $name! Your account is ready.'),
+          backgroundColor: const Color(0xFF10B981), // green = success
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } on FirebaseAuthException catch (e) {
-      // CHANGED: Translate Firebase error codes into user-friendly messages.
       String message = 'Signup failed';
       if (e.code == 'email-already-in-use') message = 'Email already registered';
       if (e.code == 'weak-password') message = 'Password is too weak';
@@ -79,6 +90,7 @@ class _SignupScreenState extends State<SignupScreen> {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -142,6 +154,19 @@ class _SignupScreenState extends State<SignupScreen> {
                   decoration: InputDecoration(
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                TextField(
+                  controller: confirmPasswordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    prefixIcon: const Icon(Icons.lock_reset),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),

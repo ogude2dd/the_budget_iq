@@ -7,6 +7,7 @@ import 'package:the_budget_iq/widgets/home/budget_card.dart';
 import 'package:the_budget_iq/widgets/home/home_header.dart';
 import 'package:the_budget_iq/widgets/home/summary_card.dart';
 import 'package:the_budget_iq/widgets/home/transaction_tile.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -54,8 +55,6 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // 🔄 CHANGED — removed `const` from Row because GestureDetector
-            // uses runtime context for navigation
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -68,8 +67,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
 
-                // 🆕 NEW — Wrapped 'See All' in a GestureDetector so it's tappable.
-                // Opens the full stats screen with bar chart and all transactions.
+                // Tap "See All" → navigate to full transaction history
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
