@@ -180,8 +180,8 @@ extension DateRangeOptionExtension on DateRangeOption {
   // we show 6 bars, "Last year" shows 12.
   List<ChartBar> _buildMonthBars(DateTime now) {
     const monthLetters = [
-      'J', 'F', 'M', 'A', 'M', 'J',
-      'J', 'A', 'S', 'O', 'N', 'D',
+      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
     ];
     int count;
     switch (this) {
