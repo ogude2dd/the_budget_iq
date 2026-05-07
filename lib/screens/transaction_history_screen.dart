@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:the_budget_iq/main.dart';
+import 'package:the_budget_iq/models/date_range.dart';
+import 'package:the_budget_iq/widgets/history/date_range_dropdown.dart';
 import 'package:the_budget_iq/widgets/history/monthly_bar_chart.dart';
-// CHANGED: Reuse the existing TransactionTile (which already has long-press
-// → bottom sheet → Edit/Delete). Removed the unused AddExpenseScreen and
-// Expense imports because we no longer handle edit/delete inline here.
 import 'package:the_budget_iq/widgets/home/transaction_tile.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
@@ -16,6 +15,11 @@ class TransactionHistoryScreen extends StatefulWidget {
 }
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
+  DateRangeOption _selectedRange = DateRangeOption.thisMonth;
+
+  // CHANGED: When the range is "This month" or another monthly range
+  // and bars are tappable, this tracks which bar (= which month) the
+  // user has selected. For non-tappable ranges, this is unused.
   late DateTime _selectedMonth;
 
   @override
@@ -36,32 +40,54 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final expenses = context.watch<ExpenseStore>().expenses;
-
     final now = DateTime.now();
-    final List<DateTime> last12Months = List.generate(12, (i) {
-      final m = DateTime(now.year, now.month - (11 - i));
-      return DateTime(m.year, m.month);
-    });
 
-    final Map<DateTime, double> monthlyTotals = {
-      for (final m in last12Months) m: 0,
-    };
+    // CHANGED: Build the bars for the active range, then fill in totals
+    // by walking the user's expenses and bucketing them.
+    final rawBars = _selectedRange.buildBars(now);
+    final bars = rawBars.map((b) {
+      final total = expenses
+          .where((e) =>
+      !e.date.isBefore(b.start) && e.date.isBefore(b.end))
+          .fold<double>(0, (sum, e) => sum + e.amount);
+      return ChartBar(
+        start: b.start,
+        end: b.end,
+        label: b.label,
+        total: total,
+      );
+    }).toList();
 
-    for (final e in expenses) {
-      final key = DateTime(e.date.year, e.date.month);
-      if (monthlyTotals.containsKey(key)) {
-        monthlyTotals[key] = (monthlyTotals[key] ?? 0) + e.amount;
-      }
+    // CHANGED: For tappable ranges (months), figure out which bar is
+    // currently "selected" so we can highlight it. For "This month",
+    // use the user-picked month. For "Last 6 months" / "Last year",
+    // default to the current month.
+    int selectedBarIndex = -1;
+    if (_selectedRange.barsAreTappable) {
+      selectedBarIndex = bars.indexWhere((b) =>
+      b.start.year == _selectedMonth.year &&
+          b.start.month == _selectedMonth.month);
     }
 
-    final monthExpenses = expenses
-        .where((e) =>
-    e.date.year == _selectedMonth.year &&
-        e.date.month == _selectedMonth.month)
+    // CHANGED: The filter window depends on the range and (for monthly
+    // ranges) on the selected bar.
+    final ({DateTime start, DateTime end}) window;
+    if (_selectedRange.barsAreTappable && selectedBarIndex >= 0) {
+      // Show only the selected month's transactions.
+      final selected = bars[selectedBarIndex];
+      window = (start: selected.start, end: selected.end);
+    } else {
+      // Use the entire range (for week/day views).
+      window = _selectedRange.range(now);
+    }
+
+    final filteredExpenses = expenses
+        .where((e) => !e.date.isBefore(window.start) && e.date.isBefore(window.end))
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
-    final selectedMonthTotal = monthlyTotals[_selectedMonth] ?? 0;
+    final filteredTotal =
+    filteredExpenses.fold<double>(0, (sum, e) => sum + e.amount);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -73,12 +99,32 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Transaction History',
+          'History',
           style: TextStyle(
             color: Color(0xFF111827),
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: DateRangeDropdown(
+                selected: _selectedRange,
+                onSelected: (r) {
+                  setState(() {
+                    _selectedRange = r;
+                    if (r.barsAreTappable) {
+                      // Reset to the current month when switching into
+                      // a tappable range.
+                      _selectedMonth = DateTime(now.year, now.month);
+                    }
+                  });
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -94,7 +140,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'GH₵${selectedMonthTotal.toStringAsFixed(2)}',
+                          'GH₵${filteredTotal.toStringAsFixed(2)}',
                           style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -104,7 +150,12 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Text(
-                            _formatMonthYear(_selectedMonth),
+                            // CHANGED: Subtitle reflects what we're actually showing.
+                            // For tappable ranges, show the selected month.
+                            // For others, show the range label.
+                            _selectedRange.barsAreTappable
+                                ? _formatMonthYear(_selectedMonth)
+                                : _selectedRange.label,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF6B7280),
@@ -115,14 +166,20 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
+                    // CHANGED: Chart now always renders, but adapts to the
+                    // bar bucket type (day, week, or month).
                     MonthlyBarChart(
-                      months: last12Months,
-                      totals: monthlyTotals,
-                      selectedMonth: _selectedMonth,
-                      onMonthSelected: (m) =>
-                          setState(() => _selectedMonth = m),
+                      bars: bars,
+                      selectedIndex: selectedBarIndex,
+                      // CHANGED: Bars are tappable only for monthly ranges.
+                      onBarTapped: _selectedRange.barsAreTappable
+                          ? (i) {
+                        setState(() {
+                          _selectedMonth = bars[i].start;
+                        });
+                      }
+                          : null,
                     ),
-                    // CHANGED: Subtle hint so users know long-press works here too.
                     const SizedBox(height: 16),
                     Text(
                       'Tip: long-press a transaction to edit or delete',
@@ -136,14 +193,16 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 ),
               ),
             ),
-            if (monthExpenses.isEmpty)
+            if (filteredExpenses.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
                     child: Text(
-                      'No transactions in ${_formatMonthYear(_selectedMonth)}.',
+                      _selectedRange.barsAreTappable
+                          ? 'No transactions in ${_formatMonthYear(_selectedMonth)}.'
+                          : 'No transactions in ${_selectedRange.label.toLowerCase()}.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.grey.shade500,
@@ -159,13 +218,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                      final e = monthExpenses[index];
-                      // CHANGED: Reuse TransactionTile so long-press behavior
-                      // is identical to the home screen — same bottom sheet,
-                      // same Edit/Delete options. No more inline icons.
+                      final e = filteredExpenses[index];
                       return TransactionTile(expense: e);
                     },
-                    childCount: monthExpenses.length,
+                    childCount: filteredExpenses.length,
                   ),
                 ),
               ),
