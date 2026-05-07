@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:the_budget_iq/widgets/main_scaffold.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -16,6 +17,11 @@ class _SignupScreenState extends State<SignupScreen> {
   final confirmPasswordController = TextEditingController();
 
   Future<void> signupUser() async {
+    // 🆕 NEW — Trigger the autofill save prompt BEFORE navigating away.
+    // Without this, Android's password manager never gets the signal
+    // that the form was successfully submitted.
+    TextInput.finishAutofillContext();
+
     final name = nameController.text.trim();
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -52,25 +58,9 @@ class _SignupScreenState extends State<SignupScreen> {
       await credential.user?.updateDisplayName(name);
 
       if (!mounted) return;
-      // CHANGED: Navigate to home first, THEN show the success snackbar.
-      // Doing it in this order means the snackbar appears on the home
-      // screen — which is where the user's eyes are — instead of
-      // flashing on the signup screen as it disappears.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const MainScaffold()),
-      );
-
-      // CHANGED: Friendly welcome message confirms the account was created.
-      // Uses scaffoldMessengerKey/rootScaffoldMessenger so it shows on the
-      // new screen, not the screen we just left.
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Welcome, $name! Your account is ready.'),
-          backgroundColor: const Color(0xFF10B981), // green = success
-          duration: const Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
-        ),
       );
     } on FirebaseAuthException catch (e) {
       String message = 'Signup failed';
@@ -123,55 +113,84 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                TextField(
-                  controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: const Icon(Icons.person_outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // 🆕 NEW — AutofillGroup tells Android's password manager
+                // that all fields inside belong to the same credential.
+                // Without this, the manager treats each field as separate
+                // and never offers to save the email + password together.
+                AutofillGroup(
+                  child: Column(
+                    children: [
+                      // Full Name — no autofill hint needed
+                      TextField(
+                        controller: nameController,
+                        textInputAction: TextInputAction.next,
+                        decoration: InputDecoration(
+                          labelText: 'Full Name',
+                          prefixIcon: const Icon(Icons.person_outline),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                      // 🆕 NEW — `autofillHints: email` tells the password
+                      // manager this is the username/email field to save.
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.email],
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: const Icon(Icons.email_outlined),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                TextField(
-                  controller: passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                      // 🆕 NEW — `autofillHints: newPassword` is the key hint.
+                      // It tells the password manager this is a NEW password
+                      // being created (not a login), which triggers the
+                      // "Save password?" prompt on Android.
+                      TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.newPassword],
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Confirm Password',
-                    prefixIcon: const Icon(Icons.lock_reset),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                      // 🆕 NEW — Same `newPassword` hint on confirm field.
+                      // `textInputAction: done` closes the keyboard and
+                      // completes the autofill flow cleanly.
+                      TextField(
+                        controller: confirmPasswordController,
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.newPassword],
+                        onSubmitted: (_) => signupUser(),
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password',
+                          prefixIcon: const Icon(Icons.lock_reset),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+
                 const SizedBox(height: 24),
 
                 SizedBox(
