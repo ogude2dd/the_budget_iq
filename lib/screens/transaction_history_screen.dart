@@ -17,24 +17,35 @@ class TransactionHistoryScreen extends StatefulWidget {
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   DateRangeOption _selectedRange = DateRangeOption.thisMonth;
 
-  // CHANGED: When the range is "This month" or another monthly range
-  // and bars are tappable, this tracks which bar (= which month) the
-  // user has selected. For non-tappable ranges, this is unused.
-  late DateTime _selectedMonth;
+  // 🔄 CHANGED — Replaced `_selectedMonth` with a generic `_selectedBarIndex`
+  // since selection now works for ALL ranges (not just monthly).
+  // -1 means "no bar selected → show full range".
+  int _selectedBarIndex = -1;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _selectedMonth = DateTime(now.year, now.month);
   }
 
-  String _formatMonthYear(DateTime d) {
+  // 📅 Format the subtitle based on the selected bar's bucket type
+  String _selectedBarLabel(ChartBar bar) {
     const months = [
       'January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December',
     ];
-    return '${months[d.month - 1]} ${d.year}';
+    const days = [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+      'Friday', 'Saturday', 'Sunday',
+    ];
+
+    switch (_selectedRange.bucketType) {
+      case BarBucket.day:
+        return days[bar.start.weekday - 1];
+      case BarBucket.week:
+        return bar.label.replaceAll('W', 'Week ');
+      case BarBucket.month:
+        return '${months[bar.start.month - 1]} ${bar.start.year}';
+    }
   }
 
   @override
@@ -42,8 +53,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     final expenses = context.watch<ExpenseStore>().expenses;
     final now = DateTime.now();
 
-    // CHANGED: Build the bars for the active range, then fill in totals
-    // by walking the user's expenses and bucketing them.
+    // Build the bars for the active range, then fill in totals
     final rawBars = _selectedRange.buildBars(now);
     final bars = rawBars.map((b) {
       final total = expenses
@@ -58,36 +68,32 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       );
     }).toList();
 
-    // CHANGED: For tappable ranges (months), figure out which bar is
-    // currently "selected" so we can highlight it. For "This month",
-    // use the user-picked month. For "Last 6 months" / "Last year",
-    // default to the current month.
-    int selectedBarIndex = -1;
-    if (_selectedRange.barsAreTappable) {
-      selectedBarIndex = bars.indexWhere((b) =>
-      b.start.year == _selectedMonth.year &&
-          b.start.month == _selectedMonth.month);
-    }
-
-    // CHANGED: The filter window depends on the range and (for monthly
-    // ranges) on the selected bar.
+    // 🔄 CHANGED — Filter window logic.
+    // If a bar is selected, use ITS date range. Otherwise, use the full range.
     final ({DateTime start, DateTime end}) window;
-    if (_selectedRange.barsAreTappable && selectedBarIndex >= 0) {
-      // Show only the selected month's transactions.
-      final selected = bars[selectedBarIndex];
+    if (_selectedBarIndex >= 0 && _selectedBarIndex < bars.length) {
+      final selected = bars[_selectedBarIndex];
       window = (start: selected.start, end: selected.end);
     } else {
-      // Use the entire range (for week/day views).
       window = _selectedRange.range(now);
     }
 
     final filteredExpenses = expenses
-        .where((e) => !e.date.isBefore(window.start) && e.date.isBefore(window.end))
+        .where((e) =>
+    !e.date.isBefore(window.start) && e.date.isBefore(window.end))
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
 
     final filteredTotal =
     filteredExpenses.fold<double>(0, (sum, e) => sum + e.amount);
+
+    // 🆕 Convenience: is a bar currently selected?
+    final hasSelection = _selectedBarIndex >= 0;
+
+    // 🆕 Subtitle text that adapts to the selection
+    final subtitle = hasSelection
+        ? _selectedBarLabel(bars[_selectedBarIndex])
+        : _selectedRange.label;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -114,11 +120,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                 onSelected: (r) {
                   setState(() {
                     _selectedRange = r;
-                    if (r.barsAreTappable) {
-                      // Reset to the current month when switching into
-                      // a tappable range.
-                      _selectedMonth = DateTime(now.year, now.month);
-                    }
+                    // 🆕 Reset selection when range changes
+                    _selectedBarIndex = -1;
                   });
                 },
               ),
@@ -150,12 +153,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 6),
                           child: Text(
-                            // CHANGED: Subtitle reflects what we're actually showing.
-                            // For tappable ranges, show the selected month.
-                            // For others, show the range label.
-                            _selectedRange.barsAreTappable
-                                ? _formatMonthYear(_selectedMonth)
-                                : _selectedRange.label,
+                            subtitle,
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF6B7280),
@@ -166,27 +164,41 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                       ],
                     ),
                     const SizedBox(height: 20),
-                    // CHANGED: Chart now always renders, but adapts to the
-                    // bar bucket type (day, week, or month).
+
+                    // 🔄 CHANGED — All bars now tappable on every range.
                     MonthlyBarChart(
                       bars: bars,
-                      selectedIndex: selectedBarIndex,
-                      // CHANGED: Bars are tappable only for monthly ranges.
-                      onBarTapped: _selectedRange.barsAreTappable
-                          ? (i) {
+                      selectedIndex: _selectedBarIndex,
+                      onBarTapped: (i) {
                         setState(() {
-                          _selectedMonth = bars[i].start;
+                          // 🆕 Tap same bar again → deselect
+                          // Tap different bar → switch selection
+                          if (_selectedBarIndex == i) {
+                            _selectedBarIndex = -1;
+                          } else {
+                            _selectedBarIndex = i;
+                          }
                         });
-                      }
-                          : null,
+                      },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+
+                    // 🆕 NEW — Smart hint text:
+                    // Shows "Tap bar again to clear" when a bar is selected,
+                    // otherwise shows the long-press tip.
                     Text(
-                      'Tip: long-press a transaction to edit or delete',
+                      hasSelection
+                          ? 'Tap the bar again to clear filter'
+                          : 'Tip: long-press a transaction to edit or delete',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey.shade500,
+                        color: hasSelection
+                            ? const Color(0xFF6366F1)
+                            : Colors.grey.shade500,
                         fontStyle: FontStyle.italic,
+                        fontWeight: hasSelection
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -200,8 +212,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(32),
                     child: Text(
-                      _selectedRange.barsAreTappable
-                          ? 'No transactions in ${_formatMonthYear(_selectedMonth)}.'
+                      hasSelection
+                          ? 'No transactions in $subtitle.'
                           : 'No transactions in ${_selectedRange.label.toLowerCase()}.',
                       textAlign: TextAlign.center,
                       style: TextStyle(

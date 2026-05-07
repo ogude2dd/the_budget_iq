@@ -15,7 +15,6 @@ class MonthlyBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Find the max total so we can scale heights proportionally.
     final maxTotal = bars.fold<double>(
       0,
           (max, b) => b.total > max ? b.total : max,
@@ -29,22 +28,16 @@ class MonthlyBarChart extends StatelessWidget {
           final i = entry.key;
           final bar = entry.value;
 
-          // Height as a fraction of maxTotal, clamped to a minimum so
-          // very small bars are still visible.
           final barHeight = maxTotal == 0
               ? 0.0
               : (bar.total / maxTotal) * 140.0;
 
-          // 🗑️ REMOVED — `isSelected` is no longer needed since bars
-          // are uniformly colored regardless of selection.
-          // (Keeping `selectedIndex` and `onBarTapped` since taps still
-          // work — they just don't visually highlight anymore.)
+          // 🆕 RE-ADDED — `isSelected` flag for indigo highlight + bold label
+          final isSelected = i == selectedIndex;
 
           Widget barColumn = Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              // Each bar sits in a fixed-height stack so empty bars
-              // still occupy the same space (track placeholder shows).
               SizedBox(
                 height: 140,
                 child: Stack(
@@ -59,16 +52,16 @@ class MonthlyBarChart extends StatelessWidget {
                       ),
                     ),
 
-                    // 🔄 CHANGED — Bars are now uniformly medium gray.
-                    // The chart is purely informational — bar height conveys
-                    // spending, and color uniformity keeps the focus on
-                    // heights instead of highlighting any single bar.
+                    // 🔄 CHANGED — Bar color now reflects selection state.
+                    // Indigo when this bar is selected, gray otherwise.
                     Container(
                       margin: const EdgeInsets.symmetric(horizontal: 3),
                       height:
                       barHeight < 4 && bar.total > 0 ? 4 : barHeight,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF9CA3AF),
+                        color: isSelected
+                            ? const Color(0xFF6366F1) // indigo when selected
+                            : const Color(0xFF9CA3AF), // gray otherwise
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -77,23 +70,21 @@ class MonthlyBarChart extends StatelessWidget {
               ),
               const SizedBox(height: 6),
 
-              // 🔄 CHANGED — Labels are uniform too. Same weight and color
-              // for every bar — no more "selected" emphasis since the color
-              // highlight is gone. Selected month appears in the subtitle
-              // (e.g. "May 2026") rather than being highlighted on the chart.
+              // 🔄 CHANGED — Selected label is bold + dark for emphasis.
               Text(
                 bar.label,
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade500,
+                  fontWeight:
+                  isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected
+                      ? const Color(0xFF111827)
+                      : Colors.grey.shade500,
                 ),
               ),
             ],
           );
 
-          // Only attach a GestureDetector if bars are tappable.
-          // Taps still work, but they don't change the bar's color.
           if (onBarTapped != null) {
             barColumn = GestureDetector(
               onTap: () => onBarTapped!(i),
