@@ -284,29 +284,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ],
                 ),
-
-                // ← ADDED: Resend verification email button
-                const SizedBox(height: 12),
-                Center(
-                  child: TextButton(
-                    onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null && !user.emailVerified) {
-                        await user.sendEmailVerification();
-                        _showError('Verification email sent again!');
-                      } else {
-                        _showError('No unverified account found.');
-                      }
-                    },
-                    child: const Text(
-                      'Resend verification email',
-                      style: TextStyle(
-                        color: Color(0xFF6B7280),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
