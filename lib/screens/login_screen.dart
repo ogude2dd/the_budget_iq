@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:the_budget_iq/main.dart';
+import 'package:the_budget_iq/screens/forgot_password_screen.dart';
 import 'package:the_budget_iq/screens/signup_screen.dart';
 import 'package:the_budget_iq/widgets/main_scaffold.dart';
 
@@ -21,8 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
 
   Future<void> loginUser() async {
-    // ← ADDED: saves the autofill credentials to the device
-    TextInput.finishAutofillContext();
+    // ← REMOVED from here
 
     final email = emailController.text.trim();
     final password = passwordController.text.trim();
@@ -41,15 +41,16 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
 
-      // ← ADDED: block unverified email users
-      if (credential.user != null &&
-          !credential.user!.emailVerified) {
+      if (credential.user != null && !credential.user!.emailVerified) {
         await FirebaseAuth.instance.signOut();
         _showError(
           'Please verify your email before logging in. Check your inbox.',
         );
         return;
       }
+
+      // ← MOVED HERE: only triggers "Save password?" after successful login
+      TextInput.finishAutofillContext();
 
       if (!mounted) return;
       await context.read<ExpenseStore>().loadUserData();
@@ -163,7 +164,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // ← ADDED: AutofillGroup wraps both fields
                 AutofillGroup(
                   child: Column(
                     children: [
@@ -171,8 +171,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: emailController,
                         keyboardType: TextInputType.emailAddress,
-                        autofillHints: const [AutofillHints.email], // ← ADDED
-                        textInputAction: TextInputAction.next,       // ← ADDED
+                        autofillHints: const [AutofillHints.email],
+                        textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
                           labelText: 'Email',
                           prefixIcon: const Icon(Icons.email_outlined),
@@ -187,9 +187,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: passwordController,
                         obscureText: true,
-                        autofillHints: const [AutofillHints.password], // ← ADDED
-                        textInputAction: TextInputAction.done,          // ← ADDED
-                        onSubmitted: (_) => loginUser(),                // ← ADDED
+                        autofillHints: const [AutofillHints.password],
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => loginUser(),
                         decoration: InputDecoration(
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock_outline),
@@ -202,7 +202,28 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                // Forgot password link
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordScreen(),
+                      ),
+                    ),
+                    child: const Text(
+                      'Forgot password?',
+                      style: TextStyle(
+                        color: Color(0xFF6366F1),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
 
                 // Login button
                 SizedBox(
