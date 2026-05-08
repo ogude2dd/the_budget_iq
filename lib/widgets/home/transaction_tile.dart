@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
-// 🆕 NEW IMPORT — needed to call ExpenseStore methods
 import 'package:provider/provider.dart';
-
-// 🆕 NEW IMPORT — gives access to ExpenseStore (for deleteExpense)
 import 'package:the_budget_iq/main.dart';
 import 'package:the_budget_iq/models/expense.dart';
-// 🆕 NEW IMPORT — to navigate to AddExpenseScreen in EDIT mode
 import 'package:the_budget_iq/screens/add_expense_screen.dart';
 import 'package:the_budget_iq/utils/format.dart';
+
 class TransactionTile extends StatelessWidget {
   final Expense expense;
 
   const TransactionTile({super.key, required this.expense});
 
-  // 🆕 NEW METHOD — _showOptions
-  // Shows a bottom sheet with Edit and Delete options when the user long-presses.
-  // Uses showModalBottomSheet because it is more thumb-friendly than a popup
-  // and matches modern finance app conventions.
+  // 🆕 NEW HELPER — formats DateTime to "8 May", "25 Jan" etc.
+  // Shown next to the category name on each tile.
+  String _formatDate(DateTime date) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${date.day} ${months[date.month - 1]}';
+  }
+
+  // Shows a bottom sheet with Edit and Delete options on long-press.
   void _showOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -27,7 +31,7 @@ class TransactionTile extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Small drag handle at the top — visual cue for a draggable sheet
+            // Small drag handle at the top
             Container(
               margin: const EdgeInsets.only(top: 8, bottom: 8),
               width: 40,
@@ -40,18 +44,19 @@ class TransactionTile extends StatelessWidget {
 
             // ✏️ Edit option
             ListTile(
-              leading:
-              const Icon(Icons.edit_outlined, color: Color(0xFF6366F1)),
+              leading: const Icon(
+                Icons.edit_outlined,
+                color: Color(0xFF6366F1),
+              ),
               title: const Text(
                 'Edit',
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               onTap: () {
-                Navigator.pop(sheetCtx); // close the sheet first
+                Navigator.pop(sheetCtx);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    // 👇 Pass the existing expense → opens screen in EDIT mode
                     builder: (_) => AddExpenseScreen(existing: expense),
                   ),
                 );
@@ -70,7 +75,7 @@ class TransactionTile extends StatelessWidget {
               ),
               onTap: () {
                 Navigator.pop(sheetCtx);
-                _confirmDelete(context); // ask before deleting
+                _confirmDelete(context);
               },
             ),
 
@@ -81,9 +86,7 @@ class TransactionTile extends StatelessWidget {
     );
   }
 
-  // 🆕 NEW METHOD — _confirmDelete
-  // Shows a confirmation dialog before actually deleting the expense.
-  // Deleting is destructive, so we always ask first to prevent mistakes.
+  // Confirmation dialog before deleting.
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
@@ -93,7 +96,6 @@ class TransactionTile extends StatelessWidget {
           'This will permanently remove "${expense.description.isEmpty ? expense.category.name : expense.description}" from your history.',
         ),
         actions: [
-          // Cancel — closes the dialog
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
             child: const Text(
@@ -101,12 +103,9 @@ class TransactionTile extends StatelessWidget {
               style: TextStyle(color: Color(0xFF6B7280)),
             ),
           ),
-
-          // Delete — actually removes the expense
           TextButton(
             onPressed: () {
               Navigator.pop(dialogCtx);
-              // 👇 Calls the deleteExpense method we added to ExpenseStore
               context.read<ExpenseStore>().deleteExpense(expense.id);
             },
             child: const Text(
@@ -124,9 +123,6 @@ class TransactionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 🔄 CHANGED — wrapped the original Container inside a GestureDetector
-    // so we can capture long-press anywhere on the tile.
-    // behavior: opaque ensures the WHOLE row is tappable, not just the icon/text.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onLongPress: () => _showOptions(context),
@@ -146,6 +142,7 @@ class TransactionTile extends StatelessWidget {
         ),
         child: Row(
           children: [
+            // Emoji icon
             Container(
               width: 44,
               height: 44,
@@ -154,10 +151,14 @@ class TransactionTile extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
-              child: Text(expense.category.emoji,
-                  style: const TextStyle(fontSize: 20)),
+              child: Text(
+                expense.category.emoji,
+                style: const TextStyle(fontSize: 20),
+              ),
             ),
             const SizedBox(width: 12),
+
+            // Title + category + date
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,16 +174,32 @@ class TransactionTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    expense.category.name,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade500,
-                    ),
+
+                  // 🔄 CHANGED — Added date next to the category name.
+                  // Format: "Transport  ·  8 May"
+                  Row(
+                    children: [
+                      Text(
+                        expense.category.name,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      Text(
+                        '  ·  ${_formatDate(expense.date)}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
+
+            // Amount
             Text(
               '-GH₵${formatCurrency(expense.amount)}',
               style: const TextStyle(
