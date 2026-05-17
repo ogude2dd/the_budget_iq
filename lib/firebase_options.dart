@@ -26,10 +26,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -59,4 +56,16 @@ class DefaultFirebaseOptions {
     projectId: 'the-budget-iq',
     storageBucket: 'the-budget-iq.firebasestorage.app',
   );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyBJ40QQ3hWY8doE798yWq94WiXAP3PLuVE',
+    appId: '1:694788623078:ios:4ca181ae1c0003f1e38927',
+    messagingSenderId: '694788623078',
+    projectId: 'the-budget-iq',
+    storageBucket: 'the-budget-iq.firebasestorage.app',
+    androidClientId: '694788623078-1h7dlc38ni1dh0f620tkl1ibs6squ58u.apps.googleusercontent.com',
+    iosClientId: '694788623078-stvvj9m50aa7t64qs44l3bg0k2o1tvn8.apps.googleusercontent.com',
+    iosBundleId: 'com.example.theBudgetIq',
+  );
+
 }
