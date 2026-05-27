@@ -40,7 +40,7 @@ extension ExpenseCategoryExtension on ExpenseCategory {
   String get emoji {
     switch (this) {
       case ExpenseCategory.food:
-        return '🍔';
+        return '🥘';
       case ExpenseCategory.transport:
         return '🚗';
       case ExpenseCategory.entertainment:
